@@ -12,3 +12,4 @@ t/004_metadata.t
 t/data/ex-mp30.mp3
 t/lib/ApmTest.pm
 t/zzz_pod.t
+META.json
