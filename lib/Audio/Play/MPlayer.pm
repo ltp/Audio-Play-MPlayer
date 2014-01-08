@@ -4,58 +4,10 @@ use strict;
 use warnings;
 use base qw(Class::Accessor::Fast);
 
-=head1 NAME
-
-Audio::Play::MPlayer - a frontend to play audio files using MPlayer
-
-=head1 SYNOPSIS
-
-    use Audio::Play::MPlayer;
-
-    # same as Audio::Play::MPG123
-    $player = Audio::Play::MPlayer->new;
-    $player->load( "ex-mp30.mp3" );
-    print $player->title, "\n";
-    $player->poll( 1 ) until $player->state == 0;
-
-=head1 DESCRIPTION
-
-This module acts as a frontend to an external MPlayer process started
-with the C<-slave> command-line option.  The idea and interface (and
-in part the code) has been taken from L<Audio::Play::MPG123>.
-
-Please see L<Audio::Play::MPG123> for the documentation.  Take into account
-that the methods:
-
-    copyrighted
-    emphasis
-    error_protected
-    extension
-    layer
-    mode
-    mode_extension
-    stat
-    statfreq
-    type
-    url
-    IN
-
-have not been implemented, and that:
-
-    jump
-    tpf
-
-work differently: C<jump> takes offsets in seconds, and C<tpf> always
-returns C<1> to make it possible to write:
-
-    $player->jump( 60 / $player->tpf );
-
-=cut
-
 use IPC::Open3 qw(open3);
 use IO::Handle;
 
-our $VERSION = '0.03';
+our $VERSION = '0.05';
 
 # FIXME, missing
 # url type layer mode mode_extension copyrighted error_protected
@@ -143,37 +95,48 @@ sub parse {
     while( my $line = $self->line( $wait ) ) {
         if( $line =~ /^EOF code:/ ) {
 	    $self->{state} = 0;
-	} elsif($line =~ /^A:\s+([\d\.]+)\s+\([\d\:\.]+\)\s+of\s+([\d\.]+)/ ) {
+	}
+	elsif($line =~ /^A:\s+([\d\.]+)\s+\([\d\:\.]+\)\s+of\s+([\d\.]+)/ ) {
             $self->{frame}->[2] = $1;
             $self->{frame}->[3] = $2 - $1;
             # FIXME heuristic
 	    $self->{state} = 0 if $self->{frame}->[3] <= 0;
-        } elsif( $line =~ /=====\s+PAUSE\s+=====/ ) {
+        }
+	elsif( $line =~ /=====\s+PAUSE\s+=====/ ) {
             $self->{state} = 1;
-        } elsif( $line =~ /^ANS_(\w+)='([^']+)'$/ ) {
+        }
+	elsif( $line =~ /^ANS_(\w+)='([^']+)'$/ ) {
             # FIXME quoting
             my( $k, $v ) = ( lc( $1 ), $2 );
 
             if( $info{$k} ) {
                 $self->{$info{$k}->[1]} = $v;
             }
-        } elsif( $line =~ /^AUDIO:\s+(\d+)/ ) {
+        }
+	elsif( $line =~ /^AUDIO:\s+(\d+)/ ) {
             $self->{samplerate} = $1;
+
             if( $line =~ /(\d+)\s+ch/i ) {
                 $self->{channels} = $1;
             }
+
             if( $line =~ /(\d+)\.\d+\s+kbit/i ) {
                 $self->{bitrate} = $1;
             }
-        } elsif( $line =~ /^Playing\s/ ) {
+
+        }
+	elsif( $line =~ /^Playing\s/ ) {
             $self->{$_->[1]} = undef foreach values %info;
             $self->command( $_->[0] ) foreach values %info;
-        } elsif( $line =~ /^\s+(title|artist|album|year|comment|genre):\s(.*?)\s*$/i ) {
+        }
+	elsif( $line =~ /^\s+(title|artist|album|year|comment|genre):\s(.*?)\s*$/i ) {
             # FIXME heuristic
             $self->{lc($1)} = $2;
-        } else {
+        }
+	else {
             # print STDERR $line, "\n";
         }
+
         return $line if $line =~ $re;
     }
 
@@ -213,7 +176,8 @@ sub stop {
 
     return if $self->{state} == 0;
     $self->pause if $self->{state} == 2;
-    $self->command( 'pausing_keep seek 0.0 2' );
+    $self->command( 'stop' );
+    #$self->command( 'pausing_keep seek 0.0 2' );
     $self->poll;
     $self->{state} = 0;
 }
@@ -248,10 +212,62 @@ sub jump {
 # mock Audio::Play::MPG123
 sub tpf { 1 }
 
+1;
+
+__END__
+
+=head1 NAME
+
+Audio::Play::MPlayer - a frontend to play audio files using MPlayer
+
+=head1 SYNOPSIS
+
+    use Audio::Play::MPlayer;
+
+    # same as Audio::Play::MPG123
+    $player = Audio::Play::MPlayer->new;
+    $player->load( "ex-mp30.mp3" );
+    print $player->title, "\n";
+    $player->poll( 1 ) until $player->state == 0;
+
+=head1 DESCRIPTION
+
+This module acts as a frontend to an external MPlayer process started
+with the C<-slave> command-line option.  The idea and interface (and
+in part the code) has been taken from L<Audio::Play::MPG123>.
+
+Please see L<Audio::Play::MPG123> for the documentation.  Take into account
+that the methods:
+
+    copyrighted
+    emphasis
+    error_protected
+    extension
+    layer
+    mode
+    mode_extension
+    stat
+    statfreq
+    type
+    url
+    IN
+
+have not been implemented, and that:
+
+    jump
+    tpf
+
+work differently: C<jump> takes offsets in seconds, and C<tpf> always
+returns C<1> to make it possible to write:
+
+    $player->jump( 60 / $player->tpf );
+
+=cut
+
 =head1 AUTHOR
 
-Mattia Barbon <mbarbon@cpan.org>, using ideas from
-L<Audio::Play::MPG123> by Marc Lehmann <schmorp@schmorp.de>.
+Mattia Barbon <mbarbon@cpan.org> and Luke Poskitt <ltp@cpan.org>, 
+using ideas from L<Audio::Play::MPG123> by Marc Lehmann <schmorp@schmorp.de>.
 
 =head1 LICENSE
 
@@ -273,4 +289,3 @@ in original).
 
 =cut
 
-1;
