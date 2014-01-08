@@ -7,7 +7,7 @@ use base qw(Class::Accessor::Fast);
 use IPC::Open3 qw(open3);
 use IO::Handle;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 # FIXME, missing
 # url type layer mode mode_extension copyrighted error_protected

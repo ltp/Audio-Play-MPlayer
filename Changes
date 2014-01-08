@@ -1,6 +1,9 @@
 Revision history for Perl extension Audio::Play::Mplayer.
 
-0.05  Web Jan 8 15:55:47 AEST 2014
+0.06  Thu Jan 9 09:34:34 AEST 2014
+	- New Makefile.PL - tests accidentally removed in previous version
+
+0.05  Wen Jan 8 15:55:47 AEST 2014
 	- Fixed stop() method.
 
 0.04  Sun Mar 20 11:54:34 AEST 2011
