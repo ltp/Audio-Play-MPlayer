@@ -37,3 +37,7 @@
 \B\._
 # Avoid archives of this distribution
 \bAudio-Play-MPlayer-[\d\.\_]+
+^MYMETA\.json$
+
+# Avoid git files
+\B\.git\b
